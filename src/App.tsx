@@ -1,8 +1,14 @@
+import { createBrowserRouter } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
+import { AppProviders } from './app/AppProviders';
+import { routes } from './app/routes';
+
+const router = createBrowserRouter(routes);
+
 export default function App() {
   return (
-    <main>
-      <h1>Mini-CRM</h1>
-      <p>Painel de vendas em construção.</p>
-    </main>
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>
   );
 }
