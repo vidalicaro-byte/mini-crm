@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import App from './App';
 
 describe('App', () => {
-  it('renders the application title', () => {
+  it('renders the overview page by default', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Mini-CRM' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Visão geral' })).toBeInTheDocument();
   });
 });
