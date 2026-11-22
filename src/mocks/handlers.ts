@@ -1,0 +1,98 @@
+import { delay, http, HttpResponse } from 'msw';
+import type { Company, Contact, ContactResponse } from '../api/schemas';
+import { db } from './db';
+
+const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+
+function notFound(message: string) {
+  return HttpResponse.json({ message }, { status: 404 });
+}
+
+function readPagination(params: URLSearchParams) {
+  const page = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
+  const rawSize = Number.parseInt(params.get('pageSize') ?? '20', 10) || 20;
+  return { page, pageSize: Math.min(100, Math.max(1, rawSize)) };
+}
+
+function paginate<T>(items: T[], page: number, pageSize: number) {
+  const start = (page - 1) * pageSize;
+  return { data: items.slice(start, start + pageSize), total: items.length, page, pageSize };
+}
+
+function sortBy<T>(items: T[], key: (item: T) => string, order: string | null) {
+  const direction = order === 'desc' ? -1 : 1;
+  return [...items].sort((a, b) => collator.compare(key(a), key(b)) * direction);
+}
+
+function matches(query: string | null, ...fields: string[]) {
+  if (!query) return true;
+  const needle = query.trim().toLocaleLowerCase('pt-BR');
+  return fields.some((field) => field.toLocaleLowerCase('pt-BR').includes(needle));
+}
+
+function toContactResponse(contact: Contact): ContactResponse {
+  const company = db.companies.find((item) => item.id === contact.companyId);
+  return { ...contact, company: { id: contact.companyId, name: company?.name ?? '' } };
+}
+
+const contactByName = (contact: ContactResponse) => contact.name;
+const contactSorters: Record<string, (contact: ContactResponse) => string> = {
+  name: contactByName,
+  email: (contact) => contact.email,
+  company: (contact) => contact.company.name,
+  createdAt: (contact) => contact.createdAt,
+};
+
+const companyByName = (company: Company) => company.name;
+const companySorters: Record<string, (company: Company) => string> = {
+  name: companyByName,
+  industry: (company) => company.industry,
+  city: (company) => company.city,
+};
+
+export const handlers = [
+  http.get('/api/contacts', async ({ request }) => {
+    await delay();
+    const params = new URL(request.url).searchParams;
+    const { page, pageSize } = readPagination(params);
+    const companyId = params.get('companyId');
+    const sorter = contactSorters[params.get('sort') ?? 'name'] ?? contactByName;
+
+    const filtered = db.contacts
+      .filter((contact) => !companyId || contact.companyId === companyId)
+      .map(toContactResponse)
+      .filter((contact) =>
+        matches(params.get('q'), contact.name, contact.email, contact.company.name),
+      );
+
+    const sorted = sortBy(filtered, sorter, params.get('order'));
+    return HttpResponse.json(paginate(sorted, page, pageSize));
+  }),
+
+  http.get('/api/contacts/:id', async ({ params }) => {
+    await delay();
+    const contact = db.contacts.find((item) => item.id === params.id);
+    return contact
+      ? HttpResponse.json(toContactResponse(contact))
+      : notFound('Contato não encontrado.');
+  }),
+
+  http.get('/api/companies', async ({ request }) => {
+    await delay();
+    const params = new URL(request.url).searchParams;
+    const { page, pageSize } = readPagination(params);
+    const sorter = companySorters[params.get('sort') ?? 'name'] ?? companyByName;
+
+    const filtered = db.companies.filter((company) =>
+      matches(params.get('q'), company.name, company.industry, company.city),
+    );
+    const sorted = sortBy(filtered, sorter, params.get('order'));
+    return HttpResponse.json(paginate(sorted, page, pageSize));
+  }),
+
+  http.get('/api/companies/:id', async ({ params }) => {
+    await delay();
+    const company = db.companies.find((item) => item.id === params.id);
+    return company ? HttpResponse.json(company) : notFound('Empresa não encontrada.');
+  }),
+];
