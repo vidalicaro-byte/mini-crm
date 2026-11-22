@@ -65,6 +65,30 @@ describe('AppLayout (mobile)', () => {
       expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument(),
     );
     expect(screen.getByRole('heading', { level: 1, name: 'Contatos' })).toBeInTheDocument();
+    // Focus lands on the content only after the drawer has finished closing.
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+  });
+
+  it('never moves focus into a page that is still aria-hidden while the drawer closes', async () => {
+    mockViewport('mobile');
+    const { user } = renderApp('/');
+    const focusedInsideHiddenTree: string[] = [];
+    const originalFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (...args) {
+      if (this.closest('[aria-hidden="true"]')) focusedInsideHiddenTree.push(this.tagName);
+      return originalFocus.apply(this, args);
+    };
+
+    try {
+      await user.click(screen.getByRole('button', { name: 'Abrir menu de navegação' }));
+      const nav = await screen.findByRole('navigation', { name: 'Principal' });
+      await user.click(within(nav).getByRole('link', { name: 'Funil' }));
+      await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+    } finally {
+      HTMLElement.prototype.focus = originalFocus;
+    }
+
+    expect(focusedInsideHiddenTree).toEqual([]);
   });
 
   it('returns focus to the menu button when the menu is closed with Escape', async () => {
