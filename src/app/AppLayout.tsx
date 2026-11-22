@@ -25,32 +25,34 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const restoreFocusToMenuButton = useRef(false);
   const isFirstRender = useRef(true);
+  // Where focus should go once the drawer has finished closing. While it animates out,
+  // MUI still keeps the page aria-hidden, and focusing anything in it is blocked.
+  const focusAfterDrawerCloses = useRef<'main' | 'menu-button' | null>(null);
 
-  function closeDrawer(restoreFocus: boolean) {
-    restoreFocusToMenuButton.current = restoreFocus;
+  function closeDrawer(focusTarget: 'main' | 'menu-button') {
+    focusAfterDrawerCloses.current = focusTarget;
+    // The closing drawer is hidden from assistive technology, so focus must leave it first.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setMobileOpen(false);
   }
 
-  // Closing the drawer with Escape or the backdrop returns focus to the menu button.
-  // Done here, after the drawer has released the page, because MUI's own restore runs
-  // while the page is still aria-hidden. Navigating moves focus to the content instead.
-  useEffect(() => {
-    if (!mobileOpen && restoreFocusToMenuButton.current) {
-      restoreFocusToMenuButton.current = false;
-      menuButtonRef.current?.focus();
-    }
-  }, [mobileOpen]);
+  function handleDrawerExited() {
+    const target = focusAfterDrawerCloses.current;
+    focusAfterDrawerCloses.current = null;
+    if (target === 'main') mainRef.current?.focus();
+    if (target === 'menu-button') menuButtonRef.current?.focus();
+  }
 
   // After a client-side navigation, move focus to the content so keyboard and
   // screen reader users start at the new page instead of the old position.
+  // (When the drawer is closing, it does this itself once the animation ends.)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    mainRef.current?.focus();
+    if (focusAfterDrawerCloses.current === null) mainRef.current?.focus();
   }, [pathname]);
 
   const navigation = (
@@ -63,7 +65,9 @@ export function AppLayout() {
             component={NavLink}
             to={to}
             end={end}
-            onClick={() => closeDrawer(false)}
+            onClick={() => {
+              if (!isDesktop) closeDrawer('main');
+            }}
             sx={{ borderRadius: 1, '&.active': { bgcolor: 'action.selected' } }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
@@ -140,8 +144,11 @@ export function AppLayout() {
         <Drawer
           variant="temporary"
           open={mobileOpen}
-          onClose={() => closeDrawer(true)}
-          slotProps={{ root: { disableRestoreFocus: true } }}
+          onClose={() => closeDrawer('menu-button')}
+          slotProps={{
+            root: { disableRestoreFocus: true },
+            transition: { onExited: handleDrawerExited },
+          }}
           sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' } }}
         >
           {navigation}
