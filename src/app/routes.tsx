@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import { FullPageSpinner } from '../components/FullPageSpinner';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RequireAuth, RequireRole } from '../features/auth/RequireAuth';
 import { AppLayout } from './AppLayout';
@@ -10,6 +11,8 @@ export const routes: RouteObject[] = [
   {
     // Everything below requires a signed-in user.
     Component: RequireAuth,
+    // Shown while the first page's code downloads (all pages below load on demand).
+    HydrateFallback: () => <FullPageSpinner label="Carregando…" />,
     children: [
       {
         path: '/',
