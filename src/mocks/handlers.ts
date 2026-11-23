@@ -1,10 +1,14 @@
 import { delay, http, HttpResponse } from 'msw';
+import { z } from 'zod';
 import {
   contactInputSchema,
+  dealStageSchema,
   loginRequestSchema,
   type Company,
   type Contact,
   type ContactResponse,
+  type Deal,
+  type DealResponse,
 } from '../api/schemas';
 import { DEMO_PASSWORD } from '../features/auth/demoAccounts';
 import { authenticate, forbidden, signToken, unauthorized } from './auth';
@@ -46,6 +50,20 @@ function toContactResponse(contact: Contact): ContactResponse {
 function canSeeContact(user: { id: string; role: string }, contactId: string) {
   const contact = db.contacts.find((item) => item.id === contactId);
   return Boolean(contact && (user.role === 'admin' || contact.ownerId === user.id));
+}
+
+function canSeeDeal(user: { id: string; role: string }, deal: Deal) {
+  return user.role === 'admin' || deal.ownerId === user.id;
+}
+
+function toDealResponse(deal: Deal): DealResponse {
+  const contact = db.contacts.find((item) => item.id === deal.contactId);
+  const company = db.companies.find((item) => item.id === deal.companyId);
+  return {
+    ...deal,
+    contact: { id: deal.contactId, name: contact?.name ?? '' },
+    company: { id: deal.companyId, name: company?.name ?? '' },
+  };
 }
 
 function invalid(message = 'Dados inválidos.') {
@@ -206,15 +224,34 @@ export const handlers = [
     if (!user) return unauthorized();
 
     const contactId = new URL(request.url).searchParams.get('contactId');
-    if (!contactId) {
-      return HttpResponse.json({ message: 'Informe o contato.' }, { status: 400 });
-    }
-    if (!canSeeContact(user, contactId)) return notFound('Contato não encontrado.');
+    if (contactId && !canSeeContact(user, contactId)) return notFound('Contato não encontrado.');
 
+    // With a contact: that contact's deals. Without: every deal the user may see (the board).
     const deals = db.deals
-      .filter((deal) => deal.contactId === contactId)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    return HttpResponse.json(paginate(deals, 1, 100));
+      .filter((deal) => (contactId ? deal.contactId === contactId : canSeeDeal(user, deal)))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(toDealResponse);
+    return HttpResponse.json(paginate(deals, 1, 200));
+  }),
+
+  http.patch('/api/deals/:id', async ({ request, params }) => {
+    await delay();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
+
+    const deal = db.deals.find((item) => item.id === params.id);
+    if (!deal || !canSeeDeal(user, deal)) return notFound('Negócio não encontrado.');
+
+    const body = z
+      .object({ stage: dealStageSchema })
+      .safeParse(await request.json().catch(() => null));
+    if (!body.success) return invalid('Etapa inválida.');
+
+    deal.stage = body.data.stage;
+    // Closing a deal stamps the date; reopening it clears it.
+    const closed = deal.stage === 'ganho' || deal.stage === 'perdido';
+    deal.closedAt = closed ? (deal.closedAt ?? new Date().toISOString()) : null;
+    return HttpResponse.json(toDealResponse(deal));
   }),
 
   http.get('/api/activities', async ({ request }) => {
