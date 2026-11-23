@@ -23,7 +23,8 @@ describe('AppLayout (desktop)', () => {
 
     await user.click(screen.getByRole('link', { name: 'Funil' }));
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Funil' })).toBeInTheDocument();
+    // Pages load on demand, so the new heading appears a moment after the click.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Funil' })).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe('Funil · Mini-CRM'));
     expect(screen.getByRole('main')).toHaveFocus();
   });

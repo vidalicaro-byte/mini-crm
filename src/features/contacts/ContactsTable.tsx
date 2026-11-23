@@ -3,13 +3,31 @@ import { useTheme } from '@mui/material/styles';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { ptBR } from '@mui/x-data-grid/locales';
 import { useMemo } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router';
+import Link from '@mui/material/Link';
 import type { ContactResponse } from '../../api/schemas';
 import { SORT_FIELDS, type ContactsFilters, type SortField } from './filters';
 
 const dateFormat = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' });
 
+/** The name opens the contact; the list's filters go along so "Voltar" restores the same view. */
+function NameLink({ id, name }: { id: string; name: string }) {
+  const { search } = useLocation();
+  return (
+    <Link component={RouterLink} to={`/contatos/${id}`} state={{ listSearch: search }}>
+      {name}
+    </Link>
+  );
+}
+
 const columns: GridColDef<ContactResponse>[] = [
-  { field: 'name', headerName: 'Nome', flex: 1.2, minWidth: 160 },
+  {
+    field: 'name',
+    headerName: 'Nome',
+    flex: 1.2,
+    minWidth: 160,
+    renderCell: ({ row }) => <NameLink id={row.id} name={row.name} />,
+  },
   { field: 'email', headerName: 'E-mail', flex: 1.4, minWidth: 200 },
   {
     field: 'company',

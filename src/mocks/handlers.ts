@@ -42,6 +42,11 @@ function toContactResponse(contact: Contact): ContactResponse {
   return { ...contact, company: { id: contact.companyId, name: company?.name ?? '' } };
 }
 
+function canSeeContact(user: { id: string; role: string }, contactId: string) {
+  const contact = db.contacts.find((item) => item.id === contactId);
+  return Boolean(contact && (user.role === 'admin' || contact.ownerId === user.id));
+}
+
 const contactByName = (contact: ContactResponse) => contact.name;
 const contactSorters: Record<string, (contact: ContactResponse) => string> = {
   name: contactByName,
@@ -134,6 +139,42 @@ export const handlers = [
     return visible
       ? HttpResponse.json(toContactResponse(contact))
       : notFound('Contato não encontrado.');
+  }),
+
+  // --- Deals and activities of a contact (same visibility rule as the contact itself) ------
+
+  http.get('/api/deals', async ({ request }) => {
+    await delay();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
+
+    const contactId = new URL(request.url).searchParams.get('contactId');
+    if (!contactId) {
+      return HttpResponse.json({ message: 'Informe o contato.' }, { status: 400 });
+    }
+    if (!canSeeContact(user, contactId)) return notFound('Contato não encontrado.');
+
+    const deals = db.deals
+      .filter((deal) => deal.contactId === contactId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return HttpResponse.json(paginate(deals, 1, 100));
+  }),
+
+  http.get('/api/activities', async ({ request }) => {
+    await delay();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
+
+    const contactId = new URL(request.url).searchParams.get('contactId');
+    if (!contactId) {
+      return HttpResponse.json({ message: 'Informe o contato.' }, { status: 400 });
+    }
+    if (!canSeeContact(user, contactId)) return notFound('Contato não encontrado.');
+
+    const activities = db.activities
+      .filter((activity) => activity.contactId === contactId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return HttpResponse.json(paginate(activities, 1, 100));
   }),
 
   // --- Companies: visible to everyone signed in -------------------------------------------
