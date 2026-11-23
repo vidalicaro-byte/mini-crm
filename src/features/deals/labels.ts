@@ -9,6 +9,16 @@ export const stageLabels: Record<DealStage, string> = {
   perdido: 'Perdido',
 };
 
+/** The funnel, left to right. */
+export const stageOrder: DealStage[] = [
+  'novo',
+  'contato',
+  'proposta',
+  'negociacao',
+  'ganho',
+  'perdido',
+];
+
 export const stageColors: Record<DealStage, 'default' | 'info' | 'warning' | 'success' | 'error'> =
   {
     novo: 'default',

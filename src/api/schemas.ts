@@ -78,6 +78,12 @@ export const dealSchema = z.object({
   closedAt: z.string().nullable(),
 });
 
+/** What the API returns for a deal: the record plus the names the board and lists display. */
+export const dealResponseSchema = dealSchema.extend({
+  contact: z.object({ id: z.string(), name: z.string() }),
+  company: z.object({ id: z.string(), name: z.string() }),
+});
+
 export const activitySchema = z.object({
   id: z.string(),
   type: z.enum(['call', 'email', 'meeting', 'note']),
@@ -116,6 +122,7 @@ export type Contact = z.infer<typeof contactSchema>;
 export type ContactInput = z.infer<typeof contactInputSchema>;
 export type ContactResponse = z.infer<typeof contactResponseSchema>;
 export type Deal = z.infer<typeof dealSchema>;
+export type DealResponse = z.infer<typeof dealResponseSchema>;
 export type DealStage = z.infer<typeof dealStageSchema>;
 export type Activity = z.infer<typeof activitySchema>;
 export type Seed = z.infer<typeof seedSchema>;

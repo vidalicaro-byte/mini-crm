@@ -20,11 +20,6 @@ describe.each([
     await expect(request('x')).rejects.toMatchObject({ status: 401 });
   });
 
-  it('requires a contact', async () => {
-    signInAs('admin');
-    await expect(request()).rejects.toMatchObject({ status: 400 });
-  });
-
   it('answers 404 for a contact that does not exist', async () => {
     signInAs('admin');
     await expect(request('nao-existe')).rejects.toMatchObject({ status: 404 });
@@ -35,6 +30,13 @@ describe.each([
     const other = notOwnedBy('usr_2');
     if (!other) throw new Error('seed has no other owner');
     await expect(request(other.id)).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('GET /api/activities', () => {
+  it('requires a contact', async () => {
+    signInAs('admin');
+    await expect(getActivities()).rejects.toMatchObject({ status: 400 });
   });
 });
 
