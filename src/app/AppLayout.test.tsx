@@ -4,11 +4,11 @@ import { mockViewport } from '../test/matchMedia';
 import { renderApp } from '../test/renderApp';
 
 describe('AppLayout (desktop)', () => {
-  it('shows the main navigation and marks the current page', () => {
-    renderApp('/contatos');
+  it('shows the main navigation and marks the current page', async () => {
+    await renderApp('/contatos');
 
     const nav = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(3);
+    expect(within(nav).getAllByRole('link')).toHaveLength(4);
     expect(within(nav).getByRole('link', { name: 'Contatos' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -19,7 +19,7 @@ describe('AppLayout (desktop)', () => {
   });
 
   it('navigates between pages, updating heading, title and focus', async () => {
-    const { user } = renderApp('/');
+    const { user } = await renderApp('/');
 
     await user.click(screen.getByRole('link', { name: 'Funil' }));
 
@@ -28,8 +28,8 @@ describe('AppLayout (desktop)', () => {
     expect(screen.getByRole('main')).toHaveFocus();
   });
 
-  it('offers a skip link to the main content', () => {
-    renderApp('/');
+  it('offers a skip link to the main content', async () => {
+    await renderApp('/');
     expect(screen.getByRole('link', { name: 'Pular para o conteúdo' })).toHaveAttribute(
       'href',
       '#conteudo',
@@ -37,7 +37,7 @@ describe('AppLayout (desktop)', () => {
   });
 
   it('shows a not found page for unknown addresses', async () => {
-    const { user, router } = renderApp('/nao-existe');
+    const { user, router } = await renderApp('/nao-existe');
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Página não encontrada' }),
@@ -51,7 +51,7 @@ describe('AppLayout (desktop)', () => {
 describe('AppLayout (mobile)', () => {
   it('hides the navigation until the menu button is used, then closes it on navigation', async () => {
     mockViewport('mobile');
-    const { user } = renderApp('/');
+    const { user } = await renderApp('/');
 
     expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
 
@@ -71,7 +71,7 @@ describe('AppLayout (mobile)', () => {
 
   it('never moves focus into a page that is still aria-hidden while the drawer closes', async () => {
     mockViewport('mobile');
-    const { user } = renderApp('/');
+    const { user } = await renderApp('/');
     const focusedInsideHiddenTree: string[] = [];
     const originalFocus = HTMLElement.prototype.focus;
     HTMLElement.prototype.focus = function (...args) {
@@ -93,7 +93,7 @@ describe('AppLayout (mobile)', () => {
 
   it('returns focus to the menu button when the menu is closed with Escape', async () => {
     mockViewport('mobile');
-    const { user } = renderApp('/');
+    const { user } = await renderApp('/');
 
     await user.click(screen.getByRole('button', { name: 'Abrir menu de navegação' }));
     await screen.findByRole('navigation', { name: 'Principal' });

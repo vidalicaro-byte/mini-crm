@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import { apiErrorBodySchema } from './schemas';
+import { tokenStore } from './tokenStore';
 
 const BASE_URL: string = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -40,12 +41,17 @@ export async function apiRequest<S extends z.ZodType>(
   path: string,
   { schema, method = 'GET', query, body, signal }: RequestOptions<S>,
 ): Promise<z.output<S>> {
+  const headers = new Headers();
+  if (body !== undefined) headers.set('Content-Type', 'application/json');
+  const token = tokenStore.get();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
   let response: Response;
   try {
     response = await fetch(buildUrl(path, query), {
       method,
       signal,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {

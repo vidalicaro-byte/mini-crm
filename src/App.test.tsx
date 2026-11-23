@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import App from './App';
 
 describe('App', () => {
-  it('renders the overview page by default', () => {
+  it('asks for a sign-in when there is no session', async () => {
     render(<App />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Visão geral' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument();
   });
 });

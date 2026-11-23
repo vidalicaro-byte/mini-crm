@@ -8,6 +8,13 @@ export const userSchema = z.object({
   role: userRoleSchema,
 });
 
+export const loginRequestSchema = z.object({
+  // Trimmed first: people often paste an address with a trailing space.
+  email: z.string().trim().pipe(z.email('Informe um e-mail válido.')),
+  password: z.string().min(1, 'Informe a senha.'),
+});
+export const loginResponseSchema = z.object({ token: z.string(), user: userSchema });
+
 export const companySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -86,6 +93,8 @@ export function paginatedSchema<T extends z.ZodType>(item: T) {
 export const apiErrorBodySchema = z.object({ message: z.string() });
 
 export type User = z.infer<typeof userSchema>;
+export type UserRole = z.infer<typeof userRoleSchema>;
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type Company = z.infer<typeof companySchema>;
 export type Contact = z.infer<typeof contactSchema>;
 export type ContactResponse = z.infer<typeof contactResponseSchema>;

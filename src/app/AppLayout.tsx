@@ -13,6 +13,8 @@ import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { useAuth } from '../features/auth/AuthContext';
+import { UserMenu } from '../features/auth/UserMenu';
 import { ColorModeToggle } from '../theme/ColorModeToggle';
 import { navItems } from './navigation';
 
@@ -23,6 +25,10 @@ export function AppLayout() {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const { pathname } = useLocation();
+  const { user } = useAuth();
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || (user !== null && item.roles.includes(user.role)),
+  );
   const mainRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const isFirstRender = useRef(true);
@@ -59,7 +65,7 @@ export function AppLayout() {
     <nav aria-label="Principal">
       <Toolbar />
       <List sx={{ px: 1 }}>
-        {navItems.map(({ label, to, icon: Icon, end }) => (
+        {visibleNavItems.map(({ label, to, icon: Icon, end }) => (
           <ListItemButton
             key={to}
             component={NavLink}
@@ -126,6 +132,7 @@ export function AppLayout() {
             Mini-CRM
           </Typography>
           <ColorModeToggle />
+          <UserMenu />
         </Toolbar>
       </AppBar>
 

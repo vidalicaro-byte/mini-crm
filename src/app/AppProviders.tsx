@@ -3,6 +3,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { createQueryClient } from '../api/queryClient';
+import { AuthProvider } from '../features/auth/AuthProvider';
 import { theme } from '../theme/theme';
 
 interface AppProvidersProps {
@@ -18,7 +19,7 @@ export function AppProviders({ children, queryClient }: AppProvidersProps) {
     <QueryClientProvider client={queryClient ?? defaultClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
