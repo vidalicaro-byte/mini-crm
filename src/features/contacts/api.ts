@@ -1,6 +1,6 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { apiRequest } from '../../api/client';
-import { contactResponseSchema, paginatedSchema } from '../../api/schemas';
+import { contactResponseSchema, paginatedSchema, type ContactInput } from '../../api/schemas';
 
 export type ContactsParams = {
   page?: number;
@@ -40,3 +40,9 @@ export const contactQuery = (id: string) =>
     queryKey: contactKeys.detail(id),
     queryFn: ({ signal }) => fetchContact(id, signal),
   });
+
+export const createContact = (input: ContactInput) =>
+  apiRequest('/contacts', { schema: contactResponseSchema, method: 'POST', body: input });
+
+export const updateContact = (id: string, input: ContactInput) =>
+  apiRequest(`/contacts/${id}`, { schema: contactResponseSchema, method: 'PATCH', body: input });

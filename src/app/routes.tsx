@@ -34,6 +34,18 @@ export const routes: RouteObject[] = [
                 }),
               },
               {
+                path: 'novo',
+                lazy: async () => ({
+                  Component: (await import('../features/contacts/NewContactPage')).NewContactPage,
+                }),
+              },
+              {
+                path: ':id/editar',
+                lazy: async () => ({
+                  Component: (await import('../features/contacts/EditContactPage')).EditContactPage,
+                }),
+              },
+              {
                 path: ':id',
                 lazy: async () => ({
                   Component: (await import('../features/contacts/ContactDetailPage'))

@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
@@ -6,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router';
 import { Page } from '../../components/Page';
 import { contactsQuery } from './api';
 import { ContactsTable } from './ContactsTable';
@@ -14,6 +16,7 @@ import { hasActiveFilters } from './filters';
 import { useContactsFilters } from './useContactsFilters';
 
 export function ContactsPage() {
+  const location = useLocation();
   const { filters, update, clear } = useContactsFilters();
   const { page, pageSize, sort, order, q, companyId } = filters;
   const contacts = useQuery(contactsQuery({ page, pageSize, sort, order, q, companyId }));
@@ -69,7 +72,20 @@ export function ContactsPage() {
   }
 
   return (
-    <Page title="Contatos">
+    <Page
+      title="Contatos"
+      actions={
+        <Button
+          component={RouterLink}
+          to="/contatos/novo"
+          state={{ listSearch: location.search }}
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          Novo contato
+        </Button>
+      }
+    >
       <ContactsToolbar filters={filters} onChange={update} onClear={clear} />
       <Stack spacing={1}>
         <Typography component="output" color="text.secondary" variant="body2">

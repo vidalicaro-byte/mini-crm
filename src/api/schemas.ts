@@ -41,6 +41,22 @@ export const contactResponseSchema = contactSchema.extend({
   company: z.object({ id: z.string(), name: z.string() }),
 });
 
+/** What the contact form sends (and the API accepts): validated the same way on both sides. */
+export const contactInputSchema = z.object({
+  name: z.string().trim().min(2, 'Informe o nome (mínimo 2 letras).').max(100, 'Nome muito longo.'),
+  email: z.string().trim().pipe(z.email('Informe um e-mail válido.')),
+  // Optional, but when present it must look like a Brazilian number with area code.
+  phone: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === '' || /^\d{10,11}$/.test(value.replace(/\D/g, '')),
+      'Informe o telefone com DDD, por exemplo (11) 91234-5678.',
+    ),
+  jobTitle: z.string().trim().max(80, 'Cargo muito longo.'),
+  companyId: z.string().min(1, 'Escolha a empresa.'),
+});
+
 export const dealStageSchema = z.enum([
   'novo',
   'contato',
@@ -97,6 +113,7 @@ export type UserRole = z.infer<typeof userRoleSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type Company = z.infer<typeof companySchema>;
 export type Contact = z.infer<typeof contactSchema>;
+export type ContactInput = z.infer<typeof contactInputSchema>;
 export type ContactResponse = z.infer<typeof contactResponseSchema>;
 export type Deal = z.infer<typeof dealSchema>;
 export type DealStage = z.infer<typeof dealStageSchema>;

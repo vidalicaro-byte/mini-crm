@@ -13,7 +13,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { Link as RouterLink, useParams } from 'react-router';
+import EditIcon from '@mui/icons-material/Edit';
+import { Link as RouterLink, useLocation, useParams } from 'react-router';
 import { ApiError } from '../../api/client';
 import { Page } from '../../components/Page';
 import { contactActivitiesQuery } from '../activities/api';
@@ -126,6 +127,7 @@ function Activities({ contactId }: { contactId: string }) {
 
 export function ContactDetailPage() {
   const { id = '' } = useParams();
+  const location = useLocation();
   const contact = useQuery(contactQuery(id));
 
   if (contact.isError) {
@@ -161,8 +163,28 @@ export function ContactDetailPage() {
   }
 
   const { data } = contact;
+  const notice = (location.state as { notice?: string } | null)?.notice;
   return (
-    <Page title={data.name} back={<BackLink />}>
+    <Page
+      title={data.name}
+      back={<BackLink />}
+      actions={
+        <Button
+          component={RouterLink}
+          to={`/contatos/${data.id}/editar`}
+          state={location.state}
+          variant="outlined"
+          startIcon={<EditIcon />}
+        >
+          Editar
+        </Button>
+      }
+    >
+      {notice && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {notice}
+        </Alert>
+      )}
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         {data.jobTitle} · {data.company.name}
       </Typography>

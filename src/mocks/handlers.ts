@@ -1,5 +1,6 @@
 import { delay, http, HttpResponse } from 'msw';
 import {
+  contactInputSchema,
   loginRequestSchema,
   type Company,
   type Contact,
@@ -45,6 +46,24 @@ function toContactResponse(contact: Contact): ContactResponse {
 function canSeeContact(user: { id: string; role: string }, contactId: string) {
   const contact = db.contacts.find((item) => item.id === contactId);
   return Boolean(contact && (user.role === 'admin' || contact.ownerId === user.id));
+}
+
+function invalid(message = 'Dados inválidos.') {
+  return HttpResponse.json({ message }, { status: 422 });
+}
+
+/** Rules that need the database: the company must exist and the e-mail must be unique. */
+function checkContactInput(input: { email: string; companyId: string }, ignoreId?: string) {
+  if (!db.companies.some((company) => company.id === input.companyId)) {
+    return invalid('Empresa não encontrada.');
+  }
+  const email = input.email.toLowerCase();
+  const taken = db.contacts.some(
+    (contact) => contact.id !== ignoreId && contact.email.toLowerCase() === email,
+  );
+  return taken
+    ? HttpResponse.json({ message: 'Já existe um contato com este e-mail.' }, { status: 409 })
+    : null;
 }
 
 const contactByName = (contact: ContactResponse) => contact.name;
@@ -139,6 +158,44 @@ export const handlers = [
     return visible
       ? HttpResponse.json(toContactResponse(contact))
       : notFound('Contato não encontrado.');
+  }),
+
+  http.post('/api/contacts', async ({ request }) => {
+    await delay();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
+
+    const input = contactInputSchema.safeParse(await request.json().catch(() => null));
+    if (!input.success) return invalid(input.error.issues[0]?.message);
+    const problem = checkContactInput(input.data);
+    if (problem) return problem;
+
+    // The new contact belongs to whoever creates it.
+    const contact: Contact = {
+      ...input.data,
+      id: `ct_${crypto.randomUUID().slice(0, 8)}`,
+      ownerId: user.id,
+      createdAt: new Date().toISOString(),
+    };
+    db.contacts.push(contact);
+    return HttpResponse.json(toContactResponse(contact), { status: 201 });
+  }),
+
+  http.patch('/api/contacts/:id', async ({ request, params }) => {
+    await delay();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
+
+    const contact = db.contacts.find((item) => item.id === params.id);
+    if (!contact || !canSeeContact(user, contact.id)) return notFound('Contato não encontrado.');
+
+    const input = contactInputSchema.safeParse(await request.json().catch(() => null));
+    if (!input.success) return invalid(input.error.issues[0]?.message);
+    const problem = checkContactInput(input.data, contact.id);
+    if (problem) return problem;
+
+    Object.assign(contact, input.data);
+    return HttpResponse.json(toContactResponse(contact));
   }),
 
   // --- Deals and activities of a contact (same visibility rule as the contact itself) ------
