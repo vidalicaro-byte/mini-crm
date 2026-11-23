@@ -6,7 +6,7 @@ import { renderApp } from '../../test/renderApp';
 
 describe('OverviewCounts', () => {
   it('shows the totals once they load', async () => {
-    renderApp('/');
+    await renderApp('/');
 
     // "Contatos" is also a menu link, so scope the lookup to the page content.
     const content = within(screen.getByRole('main'));
@@ -20,7 +20,7 @@ describe('OverviewCounts', () => {
     server.use(
       http.get('/api/contacts', () => HttpResponse.json({ message: 'Falha' }, { status: 500 })),
     );
-    const { user } = renderApp('/');
+    const { user } = await renderApp('/');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não foi possível carregar os totais.',

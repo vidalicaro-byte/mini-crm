@@ -1,8 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ApiError } from '../api/client';
 import { fetchCompanies, fetchCompany } from '../features/companies/api';
 import { fetchContact, fetchContacts } from '../features/contacts/api';
+import { signInAs } from '../test/session';
 import { db } from './db';
+
+// Every endpoint below needs a session; the admin sees everything.
+beforeEach(() => {
+  signInAs('admin');
+});
 
 describe('GET /api/contacts', () => {
   it('paginates, defaulting to 20 per page', async () => {
