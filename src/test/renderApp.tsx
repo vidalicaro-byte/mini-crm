@@ -31,6 +31,8 @@ export async function renderApp(
       <RouterProvider router={router} />
     </AppProviders>,
   );
-  if (waitForPage) await screen.findByRole('heading', { level: 1 });
+  // Generous: the first visit to a lazy page imports its code, which can take several seconds on a
+  // cold start. Normal runs return as soon as the heading shows up.
+  if (waitForPage) await screen.findByRole('heading', { level: 1 }, { timeout: 30_000 });
   return { user, router, queryClient };
 }
