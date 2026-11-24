@@ -8,9 +8,8 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useDraggable } from '@dnd-kit/core';
-import type { DraggableSyntheticListeners } from '@dnd-kit/core';
-import type { ReactNode } from 'react';
-import { useState } from 'react';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router';
 import type { DealResponse, DealStage } from '../../api/schemas';
 import { formatCurrency, stageLabels, stageOrder } from '../deals/labels';
@@ -22,20 +21,33 @@ interface DealCardViewProps {
   /** Set on the card being dragged (the floating copy) and on the one it left behind. */
   state?: 'overlay' | 'placeholder';
   onMove?: (stage: DealStage) => void;
-  /** The focusable drag handle (keyboard and screen-reader entry point). */
-  handle?: ReactNode;
-  /** Pointer/touch listeners: dragging works from anywhere on the card. */
-  dragListeners?: DraggableSyntheticListeners;
+  /**
+   * Wiring from `useDraggable`. Kept as one object with a stable identity: passing a freshly
+   * built element or object on every render would defeat `memo`, and every card would be drawn
+   * again on each mouse move of a drag.
+   */
+  drag?: {
+    attributes: DraggableAttributes;
+    /** Pointer/touch listeners: dragging works from anywhere on the card. */
+    listeners: DraggableSyntheticListeners;
+    /** The handle is the focusable keyboard and screen-reader entry point. */
+    setActivatorNodeRef: (element: HTMLElement | null) => void;
+  };
 }
 
 /** The card as drawn; `DealCard` below makes it draggable. */
-export function DealCardView({ deal, state, onMove, handle, dragListeners }: DealCardViewProps) {
+export const DealCardView = memo(function DealCardView({
+  deal,
+  state,
+  onMove,
+  drag,
+}: DealCardViewProps) {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   return (
     <Paper
       variant="outlined"
-      {...dragListeners}
+      {...drag?.listeners}
       sx={{
         p: 1.5,
         opacity: state === 'placeholder' ? 0.35 : 1,
@@ -45,7 +57,19 @@ export function DealCardView({ deal, state, onMove, handle, dragListeners }: Dea
       }}
     >
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
-        {handle ?? (
+        {drag ? (
+          // Only the handle is a control: a card that is itself a "button" would nest the link
+          // and the menu button inside another button.
+          <IconButton
+            ref={drag.setActivatorNodeRef}
+            size="small"
+            aria-label={`Arrastar ${deal.title}`}
+            sx={{ cursor: 'grab' }}
+            {...drag.attributes}
+          >
+            <DragIndicatorIcon fontSize="small" />
+          </IconButton>
+        ) : (
           <DragIndicatorIcon fontSize="small" color="disabled" sx={{ m: 0.5 }} aria-hidden />
         )}
         <Stack sx={{ flex: 1, minWidth: 0 }} spacing={0.25}>
@@ -109,40 +133,33 @@ export function DealCardView({ deal, state, onMove, handle, dragListeners }: Dea
       </Stack>
     </Paper>
   );
-}
+});
 
-export function DealCard({
+export const DealCard = memo(function DealCard({
   deal,
   onMove,
 }: {
   deal: DealResponse;
-  onMove: (stage: DealStage) => void;
+  onMove: (dealId: string, stage: DealStage) => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: deal.id,
   });
+  const handleMove = useCallback((stage: DealStage) => onMove(deal.id, stage), [onMove, deal.id]);
+
+  const drag = useMemo(
+    () => ({ attributes, listeners, setActivatorNodeRef }),
+    [attributes, listeners, setActivatorNodeRef],
+  );
 
   return (
     <li ref={setNodeRef} style={{ listStyle: 'none' }}>
       <DealCardView
         deal={deal}
         state={isDragging ? 'placeholder' : undefined}
-        onMove={onMove}
-        dragListeners={listeners}
-        // Only the handle is a control: a card that is itself a "button" would nest the link
-        // and the menu button inside another button.
-        handle={
-          <IconButton
-            ref={setActivatorNodeRef}
-            size="small"
-            aria-label={`Arrastar ${deal.title}`}
-            sx={{ cursor: 'grab' }}
-            {...attributes}
-          >
-            <DragIndicatorIcon fontSize="small" />
-          </IconButton>
-        }
+        onMove={handleMove}
+        drag={drag}
       />
     </li>
   );
-}
+});

@@ -14,7 +14,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import Box from '@mui/material/Box';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { DealResponse, DealStage } from '../../api/schemas';
 import { stageLabels, stageOrder } from '../deals/labels';
 import { BoardColumn } from './BoardColumn';
@@ -30,6 +30,15 @@ const collisionDetection: CollisionDetection = (args) => {
   return underPointer.length > 0 ? underPointer : rectIntersection(args);
 };
 
+// Sensor options live outside the component: new objects on every render would rebuild the
+// sensors, and with them every card's drag listeners, on each render.
+// Mouse and touch get their own sensors (a pointer sensor would also grab touches and fight with
+// scrolling). A few pixels of movement before a mouse drag starts, so plain clicks still click.
+const mouseOptions = { activationConstraint: { distance: 6 } };
+// On touch screens a short press starts the drag; a swipe still scrolls the board.
+const touchOptions = { activationConstraint: { delay: 200, tolerance: 8 } };
+const keyboardOptions = { coordinateGetter: columnCoordinates };
+
 interface BoardProps {
   deals: DealResponse[];
   onMove: (dealId: string, stage: DealStage) => void;
@@ -40,13 +49,17 @@ export function Board({ deals, onMove }: BoardProps) {
   const activeDeal = deals.find((deal) => deal.id === activeId);
 
   const sensors = useSensors(
-    // Mouse and touch get their own sensors (a pointer sensor would also grab touches and fight
-    // with scrolling). A few pixels of movement before a mouse drag starts, so plain clicks click.
-    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    // On touch screens a short press starts the drag; a swipe still scrolls the board.
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: columnCoordinates }),
+    useSensor(MouseSensor, mouseOptions),
+    useSensor(TouchSensor, touchOptions),
+    useSensor(KeyboardSensor, keyboardOptions),
   );
+
+  // The same array objects between renders, so unchanged columns are not rendered again.
+  const dealsByStage = useMemo(() => {
+    const grouped = Object.fromEntries(stageOrder.map((stage) => [stage, [] as DealResponse[]]));
+    for (const deal of deals) grouped[deal.stage]?.push(deal);
+    return grouped;
+  }, [deals]);
 
   const titleOf = (id: string | number) => deals.find((deal) => deal.id === id)?.title ?? 'Negócio';
   const stageOf = (id: string | number | undefined) => (isStage(id) ? stageLabels[id] : undefined);
@@ -105,7 +118,7 @@ export function Board({ deals, onMove }: BoardProps) {
           <BoardColumn
             key={stage}
             stage={stage}
-            deals={deals.filter((deal) => deal.stage === stage)}
+            deals={dealsByStage[stage] ?? []}
             onMove={onMove}
           />
         ))}

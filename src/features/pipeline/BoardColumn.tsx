@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import { useDroppable } from '@dnd-kit/core';
+import { memo } from 'react';
 import type { DealResponse, DealStage } from '../../api/schemas';
 import { formatCurrency, stageLabels } from '../deals/labels';
 import { DealCard } from './DealCard';
@@ -12,7 +13,7 @@ interface BoardColumnProps {
   onMove: (dealId: string, stage: DealStage) => void;
 }
 
-export function BoardColumn({ stage, deals, onMove }: BoardColumnProps) {
+export const BoardColumn = memo(function BoardColumn({ stage, deals, onMove }: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   const headingId = `coluna-${stage}`;
   const total = deals.reduce((sum, deal) => sum + deal.value, 0);
@@ -52,7 +53,7 @@ export function BoardColumn({ stage, deals, onMove }: BoardColumnProps) {
         }}
       >
         {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} onMove={(next) => onMove(deal.id, next)} />
+          <DealCard key={deal.id} deal={deal} onMove={onMove} />
         ))}
         {deals.length === 0 && (
           <Typography
@@ -67,4 +68,4 @@ export function BoardColumn({ stage, deals, onMove }: BoardColumnProps) {
       </Box>
     </Paper>
   );
-}
+});
