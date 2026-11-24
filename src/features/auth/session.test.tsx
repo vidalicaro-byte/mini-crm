@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { tokenStore } from '../../api/tokenStore';
+import { db } from '../../mocks/db';
 import { server } from '../../mocks/server';
 import { renderApp } from '../../test/renderApp';
 import { DEMO_PASSWORD } from './demoAccounts';
@@ -27,13 +28,13 @@ describe('protected routes', () => {
 
   it('ends the session when the API says the token is no longer valid', async () => {
     server.use(
-      http.get('/api/contacts', () =>
+      http.get('/api/overview', () =>
         HttpResponse.json({ message: 'Sessão expirada.' }, { status: 401 }),
       ),
     );
     const { router } = await renderApp('/', { as: 'admin' });
 
-    // The overview asks for the contact total, gets a 401 and the session is dropped.
+    // The overview asks for its numbers, gets a 401 and the session is dropped.
     expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
     expect(tokenStore.get()).toBeNull();
@@ -137,7 +138,9 @@ describe('roles', () => {
     await renderApp('/', { as: 'seller' });
 
     const main = within(screen.getByRole('main'));
-    expect(await main.findByText('40')).toBeInTheDocument(); // companies are shared
+    const mine = db.contacts.filter((contact) => contact.ownerId === 'usr_2').length;
+    expect(await main.findByText(String(mine))).toBeInTheDocument();
     expect(main.queryByText('180')).not.toBeInTheDocument();
+    expect(main.getByText('em 40 empresas')).toBeInTheDocument(); // companies are shared
   });
 });
