@@ -1,9 +1,22 @@
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 import { configDefaults, defineConfig } from 'vitest/config';
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
+  resolve: {
+    // Only in the production build: tests and the dev server keep the real package.
+    alias:
+      command === 'build'
+        ? [
+            {
+              find: 'tldts',
+              replacement: fileURLToPath(new URL('./src/mocks/tldts-stub.ts', import.meta.url)),
+            },
+          ]
+        : [],
+  },
   test: {
     environment: 'jsdom',
     globals: false,
@@ -22,4 +35,4 @@ export default defineConfig({
       exclude: ['src/main.tsx', 'src/test/**', 'src/**/*.test.{ts,tsx}'],
     },
   },
-});
+}));

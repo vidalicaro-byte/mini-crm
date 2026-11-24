@@ -60,7 +60,7 @@ export function LoginPage() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2 }}>
+    <Box component="main" sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2 }}>
       <title>Entrar · Mini-CRM</title>
       <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
         <ColorModeToggle />
