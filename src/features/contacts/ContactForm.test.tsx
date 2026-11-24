@@ -5,8 +5,10 @@ import { db } from '../../mocks/db';
 import { server } from '../../mocks/server';
 import { renderApp } from '../../test/renderApp';
 
-const heading = (name: string | RegExp) => screen.findByRole('heading', { level: 1, name });
-
+// Generous: a page reached by a click may still have to import its code (a cold start can take
+// several seconds on a slow disk); the wait ends as soon as the heading shows up.
+const heading = (name: string | RegExp) =>
+  screen.findByRole('heading', { level: 1, name }, { timeout: 30_000 });
 type User = Awaited<ReturnType<typeof renderApp>>['user'];
 
 async function pickCompany(user: User, name: string) {
