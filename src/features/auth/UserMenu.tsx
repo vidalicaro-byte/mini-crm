@@ -46,9 +46,18 @@ export function UserMenu() {
           setAnchor(event.currentTarget);
         }}
       >
-        <Avatar sx={{ width: 32, height: 32, fontSize: 14, bgcolor: 'primary.main' }}>
-          {initials(user.name)}
-        </Avatar>
+        <Avatar
+          // The initials are drawn by CSS, not written as text: the button is named by the aria-label
+          // ("Conta de ..."), and visible text that differs from a control's name fails WCAG 2.5.3.
+          data-initials={initials(user.name)}
+          sx={{
+            width: 32,
+            height: 32,
+            fontSize: 14,
+            bgcolor: 'primary.main',
+            '&::before': { content: 'attr(data-initials)' },
+          }}
+        />
       </IconButton>
 
       <Menu

@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -66,21 +67,23 @@ export function AppLayout() {
       <Toolbar />
       <List sx={{ px: 1 }}>
         {visibleNavItems.map(({ label, to, icon: Icon, end }) => (
-          <ListItemButton
-            key={to}
-            component={NavLink}
-            to={to}
-            end={end}
-            onClick={() => {
-              if (!isDesktop) closeDrawer('main');
-            }}
-            sx={{ borderRadius: 1, '&.active': { bgcolor: 'action.selected' } }}
-          >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <Icon />
-            </ListItemIcon>
-            <ListItemText primary={label} />
-          </ListItemButton>
+          // A list may only hold <li> elements, so each link sits inside one.
+          <ListItem key={to} disablePadding>
+            <ListItemButton
+              component={NavLink}
+              to={to}
+              end={end}
+              onClick={() => {
+                if (!isDesktop) closeDrawer('main');
+              }}
+              sx={{ borderRadius: 1, '&.active': { bgcolor: 'action.selected' } }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <Icon />
+              </ListItemIcon>
+              <ListItemText primary={label} />
+            </ListItemButton>
+          </ListItem>
         ))}
       </List>
     </nav>

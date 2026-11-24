@@ -72,7 +72,7 @@ export function PipelinePage() {
           Não foi possível carregar o funil.
         </Alert>
       ) : !board ? (
-        <Stack direction="row" spacing={2} aria-label="Carregando funil">
+        <Stack direction="row" spacing={2} component="output" aria-label="Carregando funil">
           {[0, 1, 2, 3].map((index) => (
             <Skeleton key={index} variant="rounded" height={360} sx={{ flex: 1 }} />
           ))}
