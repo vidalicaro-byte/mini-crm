@@ -3,11 +3,11 @@ import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import type { DealStage } from '../../api/schemas';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import type { DealResponse, DealStage, Paginated } from '../../api/schemas';
 import { Page } from '../../components/Page';
-import { dealsBoardQuery } from '../deals/api';
+import { dealKeys, dealsBoardQuery } from '../deals/api';
 import { formatCurrency, stageLabels } from '../deals/labels';
 import { Board } from './Board';
 import { useMoveDeal } from './useMoveDeal';
@@ -22,20 +22,31 @@ export function PipelinePage() {
     ?.filter((deal) => deal.stage !== 'ganho' && deal.stage !== 'perdido')
     .reduce((sum, deal) => sum + deal.value, 0);
 
-  function handleMove(dealId: string, stage: DealStage) {
-    const deal = board?.find((item) => item.id === dealId);
-    if (!deal) return;
-    setProblem(null);
-    move.mutate(
-      { id: dealId, stage },
-      {
-        onError: () =>
-          setProblem(
-            `Não foi possível mover “${deal.title}” para ${stageLabels[stage]}. O negócio voltou para ${stageLabels[deal.stage]}.`,
-          ),
-      },
-    );
-  }
+  const queryClient = useQueryClient();
+  const { mutate } = move;
+
+  // One identity for the whole life of the page: a new function whenever the board changes would
+  // draw every card again while one of them is being dragged. The board is read from the cache
+  // when the move happens instead of being captured here.
+  const handleMove = useCallback(
+    (dealId: string, stage: DealStage) => {
+      const deal = queryClient
+        .getQueryData<Paginated<DealResponse>>(dealKeys.board)
+        ?.data.find((item) => item.id === dealId);
+      if (!deal) return;
+      setProblem(null);
+      mutate(
+        { id: dealId, stage },
+        {
+          onError: () =>
+            setProblem(
+              `Não foi possível mover “${deal.title}” para ${stageLabels[stage]}. O negócio voltou para ${stageLabels[deal.stage]}.`,
+            ),
+        },
+      );
+    },
+    [mutate, queryClient],
+  );
 
   return (
     <Page title="Funil">
