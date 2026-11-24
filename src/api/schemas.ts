@@ -84,6 +84,29 @@ export const dealResponseSchema = dealSchema.extend({
   company: z.object({ id: z.string(), name: z.string() }),
 });
 
+export const PERIODS = ['7d', '30d', '90d', '12m'] as const;
+export const periodSchema = z.enum(PERIODS);
+
+const trendSchema = z.object({ current: z.number(), previous: z.number() });
+
+/** The overview's numbers, computed by the API for the chosen period and the user's own data. */
+export const overviewSchema = z.object({
+  period: periodSchema,
+  totals: z.object({ contacts: z.number(), companies: z.number() }),
+  newContacts: trendSchema,
+  wonRevenue: trendSchema,
+  /** Won / (won + lost) among deals closed in the period; null when none was closed. */
+  conversionRate: z.object({ current: z.number().nullable(), previous: z.number().nullable() }),
+  /** A snapshot of now: deals that are not won or lost yet. */
+  openDeals: z.object({ count: z.number(), value: z.number() }),
+  /** Deals created in the period, by the stage they are in now. */
+  funnel: z.array(z.object({ stage: dealStageSchema, count: z.number(), value: z.number() })),
+  revenue: z.object({
+    granularity: z.enum(['day', 'week', 'month']),
+    buckets: z.array(z.object({ start: z.string(), value: z.number() })),
+  }),
+});
+
 export const activitySchema = z.object({
   id: z.string(),
   type: z.enum(['call', 'email', 'meeting', 'note']),
@@ -122,6 +145,8 @@ export type Contact = z.infer<typeof contactSchema>;
 export type ContactInput = z.infer<typeof contactInputSchema>;
 export type ContactResponse = z.infer<typeof contactResponseSchema>;
 export type Deal = z.infer<typeof dealSchema>;
+export type Period = z.infer<typeof periodSchema>;
+export type Overview = z.infer<typeof overviewSchema>;
 export type DealResponse = z.infer<typeof dealResponseSchema>;
 export type DealStage = z.infer<typeof dealStageSchema>;
 export type Activity = z.infer<typeof activitySchema>;

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DealResponse, DealStage, Paginated } from '../../api/schemas';
+import { overviewKeys } from '../dashboard/api';
 import { dealKeys, moveDeal } from '../deals/api';
 
 type Board = Paginated<DealResponse>;
@@ -41,6 +42,11 @@ export function useMoveDeal() {
       // Undo only this card, so other moves made meanwhile are not reverted with it.
       if (context?.previousStage) setStage(id, context.previousStage);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dealKeys.all }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: dealKeys.all }),
+        // Won revenue, open deals and the funnel on the overview depend on the stage.
+        queryClient.invalidateQueries({ queryKey: overviewKeys.all }),
+      ]),
   });
 }

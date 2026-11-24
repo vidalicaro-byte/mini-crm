@@ -1,11 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContactInput } from '../../api/schemas';
+import { overviewKeys } from '../dashboard/api';
 import { contactKeys, createContact, updateContact } from './api';
 
 /** Whatever lists or totals show contacts is stale after a change: refetch them. */
 function useRefreshContacts() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: contactKeys.all });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: contactKeys.all }),
+      queryClient.invalidateQueries({ queryKey: overviewKeys.all }),
+    ]);
 }
 
 export function useCreateContact() {

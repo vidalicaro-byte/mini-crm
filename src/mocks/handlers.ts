@@ -1,9 +1,11 @@
 import { delay, http, HttpResponse } from 'msw';
 import { z } from 'zod';
+import { computeOverview } from './overview';
 import {
   contactInputSchema,
   dealStageSchema,
   loginRequestSchema,
+  periodSchema,
   type Company,
   type Contact,
   type ContactResponse,
@@ -214,6 +216,18 @@ export const handlers = [
 
     Object.assign(contact, input.data);
     return HttpResponse.json(toContactResponse(contact));
+  }),
+
+  http.get('/api/overview', async ({ request }) => {
+    await delay();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
+
+    const period = periodSchema.safeParse(new URL(request.url).searchParams.get('period') ?? '30d');
+    if (!period.success)
+      return HttpResponse.json({ message: 'Período inválido.' }, { status: 400 });
+
+    return HttpResponse.json(computeOverview(db, user, period.data));
   }),
 
   // --- Deals and activities of a contact (same visibility rule as the contact itself) ------
