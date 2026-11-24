@@ -157,7 +157,12 @@ export function ContactDetailPage() {
   if (!contact.data) {
     return (
       <Page title="Contato" back={<BackLink />}>
-        <Skeleton variant="rounded" height={160} aria-label="Carregando contato" />
+        <Skeleton
+          variant="rounded"
+          height={160}
+          component="output"
+          aria-label="Carregando contato"
+        />
       </Page>
     );
   }

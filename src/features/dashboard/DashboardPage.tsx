@@ -139,7 +139,12 @@ function ChartsSkeleton() {
     <Grid container spacing={2} sx={{ mt: 0 }}>
       {[0, 1].map((index) => (
         <Grid key={index} size={{ xs: 12, lg: 6 }}>
-          <Skeleton variant="rounded" height={380} aria-label="Carregando gráfico" />
+          <Skeleton
+            variant="rounded"
+            height={380}
+            component="output"
+            aria-label="Carregando gráfico"
+          />
         </Grid>
       ))}
     </Grid>

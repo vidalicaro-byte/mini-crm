@@ -47,7 +47,12 @@ export function EditContactPage() {
   if (!contact.data) {
     return (
       <Page title="Editar contato">
-        <Skeleton variant="rounded" height={320} aria-label="Carregando contato" />
+        <Skeleton
+          variant="rounded"
+          height={320}
+          component="output"
+          aria-label="Carregando contato"
+        />
       </Page>
     );
   }

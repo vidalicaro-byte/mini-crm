@@ -44,7 +44,14 @@ export function ContactsPage() {
       </Alert>
     );
   } else if (!data) {
-    content = <Skeleton variant="rounded" height={420} aria-label="Carregando contatos" />;
+    content = (
+      <Skeleton
+        variant="rounded"
+        height={420}
+        component="output"
+        aria-label="Carregando contatos"
+      />
+    );
   } else if (data.total === 0) {
     content = (
       <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
