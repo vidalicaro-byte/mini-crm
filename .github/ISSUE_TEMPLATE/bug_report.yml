@@ -1,0 +1,31 @@
+name: Bug report
+description: Something does not work as expected
+title: 'fix: '
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in as the demo administrator
+        2. Open Contacts…
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 130 on Windows 11, or Safari on iPhone 15
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or console output
+      description: Drag images here, or paste any error from the browser console.
