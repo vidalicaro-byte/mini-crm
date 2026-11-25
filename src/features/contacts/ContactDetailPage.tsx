@@ -1,9 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
 import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -12,15 +9,16 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
 import { Link as RouterLink, useLocation, useParams } from 'react-router';
 import { ApiError } from '../../api/client';
+import { Field, Section } from '../../components/DetailSection';
 import { Page } from '../../components/Page';
 import { contactActivitiesQuery } from '../activities/api';
 import { activityLabels } from '../activities/labels';
 import { contactDealsQuery } from '../deals/api';
-import { formatCurrency, stageColors, stageLabels } from '../deals/labels';
+import { formatCurrency } from '../deals/labels';
+import { StageChip } from '../deals/StageChip';
 import { contactQuery } from './api';
 import { useBackToList } from './useBackToList';
 
@@ -37,19 +35,6 @@ function BackLink() {
     >
       Voltar para contatos
     </Button>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card variant="outlined" component="section" aria-label={title}>
-      <CardContent>
-        <Typography variant="h2" sx={{ fontSize: '1.125rem', fontWeight: 600, mb: 1 }}>
-          {title}
-        </Typography>
-        {children}
-      </CardContent>
-    </Card>
   );
 }
 
@@ -70,14 +55,7 @@ function Deals({ contactId }: { contactId: string }) {
             <ListItem
               key={deal.id}
               disableGutters
-              secondaryAction={
-                <Chip
-                  size="small"
-                  label={stageLabels[deal.stage]}
-                  color={stageColors[deal.stage]}
-                  variant="outlined"
-                />
-              }
+              secondaryAction={<StageChip stage={deal.stage} />}
             >
               <ListItemText
                 primary={deal.title}
@@ -202,7 +180,11 @@ export function ContactDetailPage() {
             <Field label="Telefone">
               <Link href={`tel:${data.phone.replace(/\D/g, '')}`}>{data.phone}</Link>
             </Field>
-            <Field label="Empresa">{data.company.name}</Field>
+            <Field label="Empresa">
+              <Link component={RouterLink} to={`/empresas/${data.company.id}`}>
+                {data.company.name}
+              </Link>
+            </Field>
             <Field label="Contato desde">{formatDate(data.createdAt)}</Field>
           </Stack>
         </Section>
@@ -210,18 +192,5 @@ export function ContactDetailPage() {
         <Activities contactId={data.id} />
       </Stack>
     </Page>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <Typography component="dt" variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography component="dd" sx={{ m: 0 }}>
-        {children}
-      </Typography>
-    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DealResponse, DealStage, Paginated } from '../../api/schemas';
+import { companyKeys } from '../companies/api';
 import { overviewKeys } from '../dashboard/api';
 import { dealKeys, moveDeal } from '../deals/api';
 
@@ -47,6 +48,8 @@ export function useMoveDeal() {
         queryClient.invalidateQueries({ queryKey: dealKeys.all }),
         // Won revenue, open deals and the funnel on the overview depend on the stage.
         queryClient.invalidateQueries({ queryKey: overviewKeys.all }),
+        // So does a company's open-deals figure.
+        queryClient.invalidateQueries({ queryKey: companyKeys.all }),
       ]),
   });
 }

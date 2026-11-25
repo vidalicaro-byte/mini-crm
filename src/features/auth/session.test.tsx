@@ -123,7 +123,7 @@ describe('roles', () => {
     await renderApp('/', { as: 'seller' });
 
     const nav = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(3);
+    expect(within(nav).getAllByRole('link')).toHaveLength(4);
     expect(within(nav).queryByRole('link', { name: 'Equipe' })).not.toBeInTheDocument();
   });
 

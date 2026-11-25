@@ -1,3 +1,4 @@
+import BusinessIcon from '@mui/icons-material/Business';
 import ContactsIcon from '@mui/icons-material/Contacts';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -17,6 +18,7 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { label: 'Visão geral', to: '/', icon: DashboardIcon, end: true },
   { label: 'Contatos', to: '/contatos', icon: ContactsIcon },
+  { label: 'Empresas', to: '/empresas', icon: BusinessIcon },
   { label: 'Funil', to: '/funil', icon: ViewKanbanIcon },
   { label: 'Equipe', to: '/equipe', icon: GroupsIcon, roles: ['admin'] },
 ];

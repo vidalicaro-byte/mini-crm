@@ -41,6 +41,22 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expectAccessible(page);
     });
 
+    test('companies list', async ({ page }) => {
+      await signIn(page);
+      await goTo(page, 'Empresas');
+      await expect(page.getByRole('grid')).toBeVisible();
+      await expectAccessible(page);
+    });
+
+    test('company detail', async ({ page }) => {
+      await signIn(page);
+      await goTo(page, 'Empresas');
+      await page.getByRole('grid').getByRole('link').first().click();
+      await expect(page.getByRole('region', { name: 'Resumo' })).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Contatos' })).toBeVisible();
+      await expectAccessible(page);
+    });
+
     test('funnel', async ({ page }) => {
       await signIn(page);
       await goTo(page, 'Funil');

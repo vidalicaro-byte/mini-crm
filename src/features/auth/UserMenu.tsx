@@ -57,7 +57,10 @@ export function UserMenu() {
             bgcolor: 'primary.main',
             '&::before': { content: 'attr(data-initials)' },
           }}
-        />
+        >
+          {/* Without a child, Avatar draws its stock "person" icon on top of the initials. */}
+          <span aria-hidden />
+        </Avatar>
       </IconButton>
 
       <Menu

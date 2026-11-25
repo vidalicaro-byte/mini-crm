@@ -15,14 +15,26 @@ export const loginRequestSchema = z.object({
 });
 export const loginResponseSchema = z.object({ token: z.string(), user: userSchema });
 
+export const COMPANY_SIZES = ['pequena', 'media', 'grande'] as const;
+export const companySizeSchema = z.enum(COMPANY_SIZES);
+
 export const companySchema = z.object({
   id: z.string(),
   name: z.string(),
   industry: z.string(),
-  size: z.enum(['pequena', 'media', 'grande']),
+  size: companySizeSchema,
   city: z.string(),
   state: z.string(),
   website: z.string(),
+});
+
+/**
+ * What the API returns for a company: the record plus figures about the people the viewer may
+ * see (a seller's figures only count their own contacts and deals).
+ */
+export const companyResponseSchema = companySchema.extend({
+  contactsCount: z.number(),
+  openDeals: z.object({ count: z.number(), value: z.number() }),
 });
 
 export const contactSchema = z.object({
@@ -141,6 +153,8 @@ export type User = z.infer<typeof userSchema>;
 export type UserRole = z.infer<typeof userRoleSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type Company = z.infer<typeof companySchema>;
+export type CompanySize = z.infer<typeof companySizeSchema>;
+export type CompanyResponse = z.infer<typeof companyResponseSchema>;
 export type Contact = z.infer<typeof contactSchema>;
 export type ContactInput = z.infer<typeof contactInputSchema>;
 export type ContactResponse = z.infer<typeof contactResponseSchema>;
