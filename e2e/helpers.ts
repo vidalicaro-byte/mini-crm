@@ -16,7 +16,10 @@ export async function signIn(page: Page, account: Account = 'admin') {
 }
 
 /** Goes to a page through the menu, opening the drawer first on a phone. */
-export async function goTo(page: Page, name: 'Visão geral' | 'Contatos' | 'Funil' | 'Equipe') {
+export async function goTo(
+  page: Page,
+  name: 'Visão geral' | 'Contatos' | 'Empresas' | 'Funil' | 'Equipe',
+) {
   const menuButton = page.getByRole('button', { name: 'Abrir menu de navegação' });
   if (await menuButton.isVisible()) await menuButton.click();
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name }).click();

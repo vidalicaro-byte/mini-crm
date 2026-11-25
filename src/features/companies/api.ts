@@ -1,13 +1,14 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { apiRequest } from '../../api/client';
-import { companySchema, paginatedSchema } from '../../api/schemas';
+import { companyResponseSchema, paginatedSchema, type CompanySize } from '../../api/schemas';
 
 export type CompaniesParams = {
   page?: number;
   pageSize?: number;
-  sort?: 'name' | 'industry' | 'city';
+  sort?: 'name' | 'industry' | 'size' | 'city' | 'contactsCount' | 'openDealsValue';
   order?: 'asc' | 'desc';
   q?: string;
+  size?: CompanySize;
 };
 
 export const companyKeys = {
@@ -17,10 +18,14 @@ export const companyKeys = {
 };
 
 export const fetchCompanies = (params: CompaniesParams = {}, signal?: AbortSignal) =>
-  apiRequest('/companies', { schema: paginatedSchema(companySchema), query: params, signal });
+  apiRequest('/companies', {
+    schema: paginatedSchema(companyResponseSchema),
+    query: params,
+    signal,
+  });
 
 export const fetchCompany = (id: string, signal?: AbortSignal) =>
-  apiRequest(`/companies/${id}`, { schema: companySchema, signal });
+  apiRequest(`/companies/${id}`, { schema: companyResponseSchema, signal });
 
 export const companiesQuery = (params: CompaniesParams = {}) =>
   queryOptions({

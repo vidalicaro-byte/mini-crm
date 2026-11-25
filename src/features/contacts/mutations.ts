@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContactInput } from '../../api/schemas';
+import { companyKeys } from '../companies/api';
 import { overviewKeys } from '../dashboard/api';
 import { contactKeys, createContact, updateContact } from './api';
 
@@ -10,6 +11,8 @@ function useRefreshContacts() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: contactKeys.all }),
       queryClient.invalidateQueries({ queryKey: overviewKeys.all }),
+      // A company's contact count is part of its list and detail.
+      queryClient.invalidateQueries({ queryKey: companyKeys.all }),
     ]);
 }
 

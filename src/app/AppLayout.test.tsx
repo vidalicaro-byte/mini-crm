@@ -8,7 +8,7 @@ describe('AppLayout (desktop)', () => {
     await renderApp('/contatos');
 
     const nav = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(4);
+    expect(within(nav).getAllByRole('link')).toHaveLength(5);
     expect(within(nav).getByRole('link', { name: 'Contatos' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -27,6 +27,14 @@ describe('AppLayout (desktop)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Funil' })).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe('Funil · Mini-CRM'));
     expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('shows only the initials in the account button, not a stock avatar icon as well', async () => {
+    await renderApp('/');
+
+    const account = screen.getByRole('button', { name: /^Conta de / });
+    expect(account.querySelector('svg')).toBeNull();
+    expect(account.querySelector('[data-initials]')).toHaveAttribute('data-initials', 'MA');
   });
 
   it('offers a skip link to the main content', async () => {

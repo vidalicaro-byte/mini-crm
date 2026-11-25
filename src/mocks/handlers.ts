@@ -6,7 +6,9 @@ import {
   dealStageSchema,
   loginRequestSchema,
   periodSchema,
+  COMPANY_SIZES,
   type Company,
+  type CompanyResponse,
   type Contact,
   type ContactResponse,
   type Deal,
@@ -33,9 +35,17 @@ function paginate<T>(items: T[], page: number, pageSize: number) {
   return { data: items.slice(start, start + pageSize), total: items.length, page, pageSize };
 }
 
-function sortBy<T>(items: T[], key: (item: T) => string, order: string | null) {
+function sortBy<T>(items: T[], key: (item: T) => string | number, order: string | null) {
   const direction = order === 'desc' ? -1 : 1;
-  return [...items].sort((a, b) => collator.compare(key(a), key(b)) * direction);
+  return [...items].sort((a, b) => {
+    const left = key(a);
+    const right = key(b);
+    const result =
+      typeof left === 'number' && typeof right === 'number'
+        ? left - right
+        : collator.compare(String(left), String(right));
+    return result * direction;
+  });
 }
 
 function matches(query: string | null, ...fields: string[]) {
@@ -68,6 +78,26 @@ function toDealResponse(deal: Deal): DealResponse {
   };
 }
 
+/** A company with the figures the viewer may see: a seller only counts their own contacts and deals. */
+function toCompanyResponse(company: Company, user: { id: string; role: string }): CompanyResponse {
+  const contactsCount = db.contacts.filter(
+    (contact) =>
+      contact.companyId === company.id && (user.role === 'admin' || contact.ownerId === user.id),
+  ).length;
+  const open = db.deals.filter(
+    (deal) =>
+      deal.companyId === company.id &&
+      canSeeDeal(user, deal) &&
+      deal.stage !== 'ganho' &&
+      deal.stage !== 'perdido',
+  );
+  return {
+    ...company,
+    contactsCount,
+    openDeals: { count: open.length, value: open.reduce((sum, deal) => sum + deal.value, 0) },
+  };
+}
+
 function invalid(message = 'Dados inválidos.') {
   return HttpResponse.json({ message }, { status: 422 });
 }
@@ -94,11 +124,15 @@ const contactSorters: Record<string, (contact: ContactResponse) => string> = {
   createdAt: (contact) => contact.createdAt,
 };
 
-const companyByName = (company: Company) => company.name;
-const companySorters: Record<string, (company: Company) => string> = {
+const companyByName = (company: CompanyResponse) => company.name;
+const sizeRank = (company: CompanyResponse) => COMPANY_SIZES.indexOf(company.size);
+const companySorters: Record<string, (company: CompanyResponse) => string | number> = {
   name: companyByName,
   industry: (company) => company.industry,
+  size: sizeRank,
   city: (company) => company.city,
+  contactsCount: (company) => company.contactsCount,
+  openDealsValue: (company) => company.openDeals.value,
 };
 
 export const handlers = [
@@ -237,12 +271,16 @@ export const handlers = [
     const user = authenticate(request);
     if (!user) return unauthorized();
 
-    const contactId = new URL(request.url).searchParams.get('contactId');
+    const params = new URL(request.url).searchParams;
+    const contactId = params.get('contactId');
+    const companyId = params.get('companyId');
     if (contactId && !canSeeContact(user, contactId)) return notFound('Contato não encontrado.');
 
-    // With a contact: that contact's deals. Without: every deal the user may see (the board).
+    // With a contact: that contact's deals. Otherwise the deals the user may see, optionally
+    // narrowed to one company (the funnel board asks for all of them).
     const deals = db.deals
       .filter((deal) => (contactId ? deal.contactId === contactId : canSeeDeal(user, deal)))
+      .filter((deal) => !companyId || deal.companyId === companyId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(toDealResponse);
     return HttpResponse.json(paginate(deals, 1, 200));
@@ -289,24 +327,31 @@ export const handlers = [
 
   http.get('/api/companies', async ({ request }) => {
     await delay();
-    if (!authenticate(request)) return unauthorized();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
 
     const params = new URL(request.url).searchParams;
     const { page, pageSize } = readPagination(params);
     const sorter = companySorters[params.get('sort') ?? 'name'] ?? companyByName;
+    const size = params.get('size');
 
-    const filtered = db.companies.filter((company) =>
-      matches(params.get('q'), company.name, company.industry, company.city),
-    );
-    const sorted = sortBy(filtered, sorter, params.get('order'));
+    const filtered = db.companies
+      .filter((company) => !size || company.size === size)
+      .map((company) => toCompanyResponse(company, user))
+      .filter((company) => matches(params.get('q'), company.name, company.industry, company.city));
+    // Sorted by name first, so companies that tie on the chosen column keep a stable order.
+    const sorted = sortBy(sortBy(filtered, companyByName, 'asc'), sorter, params.get('order'));
     return HttpResponse.json(paginate(sorted, page, pageSize));
   }),
 
   http.get('/api/companies/:id', async ({ request, params }) => {
     await delay();
-    if (!authenticate(request)) return unauthorized();
+    const user = authenticate(request);
+    if (!user) return unauthorized();
 
     const company = db.companies.find((item) => item.id === params.id);
-    return company ? HttpResponse.json(company) : notFound('Empresa não encontrada.');
+    return company
+      ? HttpResponse.json(toCompanyResponse(company, user))
+      : notFound('Empresa não encontrada.');
   }),
 ];

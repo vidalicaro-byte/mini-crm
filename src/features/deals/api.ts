@@ -6,6 +6,7 @@ export const dealKeys = {
   all: ['deals'] as const,
   board: ['deals', 'board'] as const,
   byContact: (contactId: string) => [...dealKeys.all, 'contact', contactId] as const,
+  byCompany: (companyId: string) => [...dealKeys.all, 'company', companyId] as const,
 };
 
 const dealsSchema = paginatedSchema(dealResponseSchema);
@@ -15,6 +16,15 @@ export const contactDealsQuery = (contactId: string) =>
     queryKey: dealKeys.byContact(contactId),
     queryFn: ({ signal }) =>
       apiRequest('/deals', { schema: dealsSchema, query: { contactId }, signal }),
+  });
+
+export const fetchCompanyDeals = (companyId: string, signal?: AbortSignal) =>
+  apiRequest('/deals', { schema: dealsSchema, query: { companyId }, signal });
+
+export const companyDealsQuery = (companyId: string) =>
+  queryOptions({
+    queryKey: dealKeys.byCompany(companyId),
+    queryFn: ({ signal }) => fetchCompanyDeals(companyId, signal),
   });
 
 /** Every deal the user may see, for the funnel board. */

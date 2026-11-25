@@ -55,6 +55,24 @@ export const routes: RouteObject[] = [
             ],
           },
           {
+            path: 'empresas',
+            children: [
+              {
+                index: true,
+                lazy: async () => ({
+                  Component: (await import('../features/companies/CompaniesPage')).CompaniesPage,
+                }),
+              },
+              {
+                path: ':id',
+                lazy: async () => ({
+                  Component: (await import('../features/companies/CompanyDetailPage'))
+                    .CompanyDetailPage,
+                }),
+              },
+            ],
+          },
+          {
             path: 'funil',
             lazy: async () => ({
               Component: (await import('../features/pipeline/PipelinePage')).PipelinePage,
