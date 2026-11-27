@@ -5,9 +5,9 @@
 
 🇺🇸 English · [🇧🇷 Português](README.pt-BR.md)
 
-A sales CRM front end: a dashboard with KPIs and charts, searchable contact and company lists, and a kanban funnel you can drag deals across — with roles, light/dark themes and a mobile layout. It runs against a **simulated API inside the browser**, so the demo needs no backend.
+A sales CRM front end: a dashboard with KPIs and charts, searchable contact and company lists, and a kanban funnel you can drag deals across — with roles, light/dark themes and a mobile layout. The live demo runs on a **real REST API** ([mini-crm-api](https://github.com/vidalicaro-byte/mini-crm-api): FastAPI + PostgreSQL); locally it can also run on a **simulated API inside the browser**, with no backend at all.
 
-**[▶ Live demo](https://mini-crm-ten-coral.vercel.app/)** — click "Entrar como administradora" (administrator) or "Entrar como vendedor" (seller) on the login page. The interface is in Brazilian Portuguese.
+**[▶ Live demo](https://mini-crm-ten-coral.vercel.app/)** — click "Entrar como administradora" (administrator) or "Entrar como vendedor" (seller) on the login page. The interface is in Brazilian Portuguese. The demo API sleeps when idle (free hosting), so the first visit may show a short "waking up the server" screen; the demo data is reset every night.
 
 |                                                  |                                                    |
 | ------------------------------------------------ | -------------------------------------------------- |
@@ -31,7 +31,8 @@ A sales CRM front end: a dashboard with KPIs and charts, searchable contact and 
 
 ## Engineering notes
 
-- **Mock API with a real contract.** [MSW](https://mswjs.io/) intercepts requests with realistic latency, validation (`422`), conflicts (`409`), `401` and `403`. Every response is parsed with [Zod](https://zod.dev/) schemas shared by the client and the mock, so swapping in a real backend means changing the base URL, not the screens.
+- **One contract, two backends.** Every response is parsed with [Zod](https://zod.dev/) schemas (`src/api/schemas.ts`). In development and tests, [MSW](https://mswjs.io/) serves that contract with realistic latency, validation (`422`), conflicts (`409`), `401` and `403`. In production the same screens talk to [a real API](https://github.com/vidalicaro-byte/mini-crm-api) that implements it: switching was a matter of environment variables, not screen changes.
+- **Cold starts handled.** Free hosting puts the API to sleep; a gate polls its health check and, if the wait is noticeable, explains it instead of showing a wall of spinners, with a retry if the server never answers.
 - **Server state with TanStack Query**: query keys per list, `keepPreviousData` while paging, invalidation after writes (a new contact updates the overview and the company figures), and an optimistic update with per-card rollback on the funnel.
 - **The URL is the state of a list.** Pure functions parse and write the filters (unit-tested, including invalid and hand-edited URLs); one hook serves both the contacts and the companies lists.
 - **Accessibility is tested, not hoped for.** [axe](https://github.com/dequelabs/axe-core) runs on every page in light and dark themes, on desktop and phone, in CI. It found real problems along the way (list markup, a control whose name differed from its visible text, low-contrast labels), now fixed. The funnel works by keyboard with announcements in Portuguese, and the app has a skip link and moves focus on navigation.
@@ -41,7 +42,7 @@ A sales CRM front end: a dashboard with KPIs and charts, searchable contact and 
 
 | What                                  | How                                                                                                                                            |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 245 unit and integration tests        | [Vitest](https://vitest.dev/) + Testing Library, with the mock API running underneath                                                          |
+| 255 unit and integration tests        | [Vitest](https://vitest.dev/) + Testing Library, with the mock API running underneath                                                          |
 | 75 end-to-end and accessibility tests | [Playwright](https://playwright.dev/) + axe against the production build, desktop and phone profiles                                           |
 | Static checks                         | TypeScript (strict, `noUncheckedIndexedAccess`), [oxlint](https://oxc.rs/docs/guide/usage/linter) (with jsx-a11y rules), Prettier              |
 | Git hygiene                           | Husky + lint-staged, [Conventional Commits](https://www.conventionalcommits.org/) with commitlint, squash merges                               |
@@ -66,7 +67,7 @@ Numbers vary by machine; run the command to measure on yours.
 
 ## Tech stack
 
-React 19 · TypeScript · Vite · Material UI (with MUI X Data Grid and Charts) · React Router · TanStack Query · React Hook Form + Zod · dnd-kit · MSW · Vitest · Playwright · Deployed on Vercel.
+React 19 · TypeScript · Vite · Material UI (with MUI X Data Grid and Charts) · React Router · TanStack Query · React Hook Form + Zod · dnd-kit · MSW · Vitest · Playwright · Deployed on Vercel, with the [API](https://github.com/vidalicaro-byte/mini-crm-api) on Render.
 
 ## Running it locally
 
@@ -96,6 +97,14 @@ Open http://localhost:5173. Demo accounts (also one click on the login page):
 | `npm run lint` · `typecheck` · `format:check`    | Static checks                                                         |
 | `npm run seed`                                   | Regenerate the fake data (`src/mocks/seed.json`)                      |
 
+By default everything runs on the in-browser mock API. To use the real API instead (running locally, see its README), create `.env.local`:
+
+```bash
+VITE_ENABLE_MOCKS=false
+VITE_API_URL=http://localhost:8000/api
+VITE_DEMO_ACCOUNTS=true   # keep the one-click demo sign-in buttons
+```
+
 ## Project layout
 
 ```
@@ -112,10 +121,9 @@ e2e/            Playwright tests
 
 ## Limitations
 
-- The data is fake and lives in the browser's memory: **reloading the page resets it** (you stay signed in). Nothing is sent anywhere.
+- The data is fake. On the live demo it is shared by every visitor and reset every night; on the mock API it lives in the browser's memory and **reloading the page resets it**.
 - The interface is Brazilian Portuguese only; there is no translation layer.
 - Companies and deals are read-only in the interface (contacts can be created and edited; deals move between stages).
-- It is a front-end showcase: there is no real backend yet. A full-stack version, with this front end on a TypeScript API, is planned.
 
 ## License
 

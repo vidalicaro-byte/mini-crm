@@ -5,9 +5,9 @@
 
 [🇺🇸 English](README.md) · 🇧🇷 Português
 
-Front end de um CRM de vendas: painel com indicadores e gráficos, listas de contatos e de empresas com busca, e um funil kanban onde se arrastam negócios entre etapas — com perfis de acesso, temas claro e escuro e layout para celular. Ele roda contra uma **API simulada dentro do navegador**, então a demonstração não precisa de servidor.
+Front end de um CRM de vendas: painel com indicadores e gráficos, listas de contatos e de empresas com busca, e um funil kanban onde se arrastam negócios entre etapas — com perfis de acesso, temas claro e escuro e layout para celular. A demonstração ao vivo roda sobre uma **API REST real** ([mini-crm-api](https://github.com/vidalicaro-byte/mini-crm-api): FastAPI + PostgreSQL); localmente ele também roda sobre uma **API simulada dentro do navegador**, sem servidor nenhum.
 
-**[▶ Demonstração online](https://mini-crm-ten-coral.vercel.app/)** — na tela de login, clique em "Entrar como administradora" ou "Entrar como vendedor".
+**[▶ Demonstração online](https://mini-crm-ten-coral.vercel.app/)** — na tela de login, clique em "Entrar como administradora" ou "Entrar como vendedor". A API de demonstração dorme quando fica sem uso (hospedagem gratuita), então a primeira visita pode mostrar por alguns instantes a tela "Acordando o servidor"; os dados de demonstração são reiniciados toda noite.
 
 |                                                    |                                                   |
 | -------------------------------------------------- | ------------------------------------------------- |
@@ -31,7 +31,8 @@ Front end de um CRM de vendas: painel com indicadores e gráficos, listas de con
 
 ## Notas de engenharia
 
-- **API simulada com contrato de verdade.** O [MSW](https://mswjs.io/) intercepta as requisições com latência realista, validação (`422`), conflitos (`409`), `401` e `403`. Toda resposta é validada por schemas [Zod](https://zod.dev/) compartilhados entre o cliente e a simulação; trocar por um backend real significa mudar o endereço da API, não as telas.
+- **Um contrato, dois backends.** Toda resposta é validada por schemas [Zod](https://zod.dev/) (`src/api/schemas.ts`). No desenvolvimento e nos testes, o [MSW](https://mswjs.io/) serve esse contrato com latência realista, validação (`422`), conflitos (`409`), `401` e `403`. Em produção, as mesmas telas falam com [uma API real](https://github.com/vidalicaro-byte/mini-crm-api) que o implementa: a troca foi feita com variáveis de ambiente, sem mudar as telas.
+- **Servidor dormindo, tratado.** A hospedagem gratuita põe a API para dormir; uma tela de espera consulta o health check e, se a espera for perceptível, explica o que está acontecendo em vez de encher a página de spinners, com a opção de tentar de novo se o servidor não responder.
 - **Estado do servidor com TanStack Query**: chaves de consulta por lista, `keepPreviousData` ao paginar, invalidação depois das escritas (um novo contato atualiza a visão geral e os números das empresas) e atualização otimista com desfazer por cartão no funil.
 - **A URL é o estado da lista.** Funções puras leem e escrevem os filtros (com testes, inclusive para URLs inválidas ou editadas à mão); um mesmo hook atende as listas de contatos e de empresas.
 - **Acessibilidade é testada, não suposta.** O [axe](https://github.com/dequelabs/axe-core) roda em todas as páginas, nos temas claro e escuro, no desktop e no celular, no CI. Ele achou problemas reais pelo caminho (marcação de lista, um controle cujo nome diferia do texto visível, rótulos de baixo contraste), já corrigidos. O funil funciona pelo teclado, com anúncios em português, e o app tem link "pular para o conteúdo" e move o foco ao navegar.
@@ -41,7 +42,7 @@ Front end de um CRM de vendas: painel com indicadores e gráficos, listas de con
 
 | O quê                                       | Como                                                                                                                                                           |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 245 testes unitários e de integração        | [Vitest](https://vitest.dev/) + Testing Library, com a API simulada rodando por baixo                                                                          |
+| 255 testes unitários e de integração        | [Vitest](https://vitest.dev/) + Testing Library, com a API simulada rodando por baixo                                                                          |
 | 75 testes ponta a ponta e de acessibilidade | [Playwright](https://playwright.dev/) + axe contra a build de produção, perfis desktop e celular                                                               |
 | Verificações estáticas                      | TypeScript (strict, `noUncheckedIndexedAccess`), [oxlint](https://oxc.rs/docs/guide/usage/linter) (com regras jsx-a11y), Prettier                              |
 | Higiene de Git                              | Husky + lint-staged, [Conventional Commits](https://www.conventionalcommits.org/pt-br/) com commitlint, squash merge                                           |
@@ -66,7 +67,7 @@ Os números variam de máquina para máquina; rode o comando para medir na sua.
 
 ## Tecnologias
 
-React 19 · TypeScript · Vite · Material UI (com MUI X Data Grid e Charts) · React Router · TanStack Query · React Hook Form + Zod · dnd-kit · MSW · Vitest · Playwright · Publicado na Vercel.
+React 19 · TypeScript · Vite · Material UI (com MUI X Data Grid e Charts) · React Router · TanStack Query · React Hook Form + Zod · dnd-kit · MSW · Vitest · Playwright · Publicado na Vercel, com a [API](https://github.com/vidalicaro-byte/mini-crm-api) no Render.
 
 ## Rodando localmente
 
@@ -96,6 +97,14 @@ Abra http://localhost:5173. Contas de demonstração (também com um clique na t
 | `npm run lint` · `typecheck` · `format:check`    | Verificações estáticas                                                    |
 | `npm run seed`                                   | Gera de novo os dados fictícios (`src/mocks/seed.json`)                   |
 
+Por padrão tudo roda sobre a API simulada no navegador. Para usar a API real (rodando localmente, veja o README dela), crie um `.env.local`:
+
+```bash
+VITE_ENABLE_MOCKS=false
+VITE_API_URL=http://localhost:8000/api
+VITE_DEMO_ACCOUNTS=true   # mantém os botões de login de demonstração
+```
+
 ## Estrutura
 
 ```
@@ -112,10 +121,9 @@ e2e/            testes do Playwright
 
 ## Limitações
 
-- Os dados são fictícios e ficam na memória do navegador: **recarregar a página os reinicia** (você continua logado). Nada é enviado para lugar nenhum.
+- Os dados são fictícios. Na demonstração ao vivo, eles são compartilhados por todos os visitantes e reiniciados toda noite; na API simulada, ficam na memória do navegador e **recarregar a página os reinicia**.
 - A interface está só em português do Brasil; não há camada de tradução.
 - Empresas e negócios são somente leitura na interface (contatos podem ser criados e editados; os negócios mudam de etapa).
-- É uma vitrine de front end: ainda não há backend real. Está planejada uma versão full-stack, com este front end sobre uma API em TypeScript.
 
 ## Licença
 

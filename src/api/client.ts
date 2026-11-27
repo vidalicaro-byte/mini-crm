@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import { apiErrorBodySchema } from './schemas';
 import { tokenStore } from './tokenStore';
 
-const BASE_URL: string = import.meta.env.VITE_API_URL ?? '/api';
+export const BASE_URL: string = import.meta.env.VITE_API_URL ?? '/api';
 
 export class ApiError extends Error {
   readonly status: number;

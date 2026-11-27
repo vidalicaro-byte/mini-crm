@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { createQueryClient } from '../api/queryClient';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { theme } from '../theme/theme';
+import { ServerWakeGate } from './ServerWakeGate';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -19,7 +20,9 @@ export function AppProviders({ children, queryClient }: AppProvidersProps) {
     <QueryClientProvider client={queryClient ?? defaultClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AuthProvider>{children}</AuthProvider>
+        <ServerWakeGate>
+          <AuthProvider>{children}</AuthProvider>
+        </ServerWakeGate>
       </ThemeProvider>
     </QueryClientProvider>
   );
